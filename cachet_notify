@@ -85,7 +85,7 @@ Determine what to to:
  - if RECOVERY and SOFT then update incident
  - if RECOVERY and HARD then update incident
 
-PROBLEM = !OK = (WARNING | CRITICAL | UNKONWN)
+PROBLEM = !OK = (WARNING | CRITICAL | UNKNOWN)
 RECOVERY = OK
 */
 if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Hope it will be back soon
