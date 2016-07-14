@@ -6,8 +6,8 @@ if ($argc != 6) {
 	exit(1);
 }
 
-$cachet_url = 'http://xxxx/api/v1/';
-$api_key = 'xxxx';
+$cachet_url = 'http://example.com/api/v1/';
+$api_key = 'XXXXX';
 
 $incident_prefix = '[Nagios]';
 $cachet_notify_subscribers = true; // Enable subscribers notifcation for incidents creation and updates
@@ -80,17 +80,25 @@ if ($cachet_component_id === false) {
 
 /*
 Determine what to to:
- - if PROBLEM and SOFT then don't cry just yet
+ - if PROBLEM and SOFT then change component status to 2/INVESTIGATING
  - if PROBLEM and HARD then create incident
  - if RECOVERY and SOFT then update incident
- - if RECOVERY and HARD then update incident
+ - if RECOVERY and HARD then update incident or component if no incident exists
 
 PROBLEM = !OK = (WARNING | CRITICAL | UNKNOWN)
 RECOVERY = OK
 */
-if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Hope it will be back soon
-	echo 'KO SOFT: not doing anything' . "\n";
-	exit(0);
+if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change component status indicating trouble
+	echo 'KO SOFT: changing component status' . "\n";
+	$query = array(
+		'name' => $cachet_component,
+		'status' => CACHET_COMPONENTSTATUS_INVESTIGATING,
+	);
+	$result = cachet_query('components/' . $cachet_component_id, 'PUT', $query);
+	if ($result['code'] != 200) {
+		echo 'Error updating component' . "\n";
+		exit(1);
+	}
 } elseif ($service_status != 'OK' && $service_status_type == 'HARD') { // Something went wrong, let's notify
 	echo 'KO HARD: creating incident' . "\n";
 	$query = array(
@@ -135,16 +143,13 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Hope it will
 		'notify' => $cachet_notify_subscribers,
 		'component_status' => 3,
 	);
-	/* Use a POST query as that will keep an incident history */
 	$result = cachet_query('incidents', 'POST', $query);
-	/* $result = cachet_query('incidents/' . $cachet_incident_id, 'PUT',
-$query); */
 	if ($result['code'] != 200) {
 		echo 'Can\'t update incident' . "\n";
 		exit(1);
 	}
 } elseif ($service_status == 'OK' && $service_status_type == 'HARD') { // Recovery completed
-	echo 'OK HARD: updating incident' . "\n";
+	echo 'OK HARD: updating incident or component' . "\n";
 	/* Get the incident ID */
 	$results = cachet_query('incidents');
 	if ($result['code'] != 200) {
@@ -160,6 +165,17 @@ $query); */
 	}
 	if ($cachet_incident_id === false) {
 		echo 'Can\'t find incident "' . $incident_prefix . ' ' . $service_name . '"' . "\n";
+		/* Found no incident.  Just update component status */
+		echo 'OK HARD: only changing component status' . "\n";
+		$query = array(
+			'name' => $cachet_component,
+			'status' => CACHET_COMPONENTSTATUS_OK,
+		);
+		$result = cachet_query('components/' . $cachet_component_id, 'PUT', $query);
+		if ($result['code'] != 200) {
+			echo 'Error updating component' . "\n";
+			exit(1);
+		}
 		exit(1);
 	}
 
@@ -172,10 +188,7 @@ $query); */
 		'notify' => $cachet_notify_subscribers,
                 'component_status' => 1,
 	);
-	/* Use a POST query as that will keep an incident history */
 	$result = cachet_query('incidents', 'POST', $query);
-	/* $result = cachet_query('incidents/' . $cachet_incident_id, 'PUT',
-$query); */
 	if ($result['code'] != 200) {
 		echo 'Can\'t update incident' . "\n";
 		exit(1);
