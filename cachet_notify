@@ -120,7 +120,7 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 	echo 'KO HARD: changing component status' . "\n";
 	$query = array(
 		'name' => $cachet_component,
-		'status' => CACHET_COMPONENTSTATUS_MAJOROUTAGE,
+		'status' => CACHET_COMPONENTSTATUS_INVESTIGATING,
 	);
 	$result = cachet_query('components/' . $cachet_component_id, 'PUT', $query);
 	if ($result['code'] != 200) {
