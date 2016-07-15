@@ -99,7 +99,8 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 		echo 'Error updating component' . "\n";
 		exit(1);
 	}
-} elseif ($service_status != 'OK' && $service_status_type == 'HARD') { // Something went wrong, let's notify
+} elseif ($service_status != 'OK' && $service_status_type == 'HARD' && strpos($cachet_component, 'Load') === false) {
+/* If DOWN HARD and component doesn't contain 'Load' create an incident */
 	echo 'KO HARD: creating incident' . "\n";
 	$query = array(
 		'name' => $incident_prefix . ' ' . $service_name,
@@ -112,6 +113,18 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 	$result = cachet_query('incidents', 'POST', $query);
 	if ($result['code'] != 200) {
 		echo 'Can\'t create incident' . "\n";
+		exit(1);
+	}
+} elseif ($service_status != 'OK' && $service_status_type == 'HARD' && strpos($cachet_component, 'Load') !== false) {
+/* If DOWN HARD and component contains 'Load' just update the component */
+	echo 'KO HARD: changing component status' . "\n";
+	$query = array(
+		'name' => $cachet_component,
+		'status' => CACHET_COMPONENTSTATUS_MAJOROUTAGE,
+	);
+	$result = cachet_query('components/' . $cachet_component_id, 'PUT', $query);
+	if ($result['code'] != 200) {
+		echo 'Error updating component' . "\n";
 		exit(1);
 	}
 } elseif ($service_status == 'OK' && $service_status_type == 'SOFT') { // Recovery underway
