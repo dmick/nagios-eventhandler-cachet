@@ -80,10 +80,9 @@ if ($cachet_component_id === false) {
 
 /*
 Determine what to to:
- - if PROBLEM and SOFT then change component status to 2/INVESTIGATING
+ - if PROBLEM and SOFT then change component status to 2/INVESTIGATING (Performance Issues)
  - if PROBLEM and HARD then create incident
- - if RECOVERY and SOFT then update incident
- - if RECOVERY and HARD then update incident or component if no incident exists
+ - if RECOVERY then update incident or component if no incident exists
 
 PROBLEM = !OK = (WARNING | CRITICAL | UNKNOWN)
 RECOVERY = OK
@@ -127,41 +126,7 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 		echo 'Error updating component' . "\n";
 		exit(1);
 	}
-} elseif ($service_status == 'OK' && $service_status_type == 'SOFT') { // Recovery underway
-	echo 'OK SOFT: updating incident' . "\n";
-	/* Get the incident ID */
-	$results = cachet_query('incidents');
-	if ($result['code'] != 200) {
-		echo 'Can\'t get incidents' . "\n";
-		exit(1);
-	}
-	$cachet_incident_id = false;
-	foreach ($results['body']->data as $incident) {
-		if ($incident->name == $incident_prefix . ' ' . $service_name) {
-			$cachet_incident_id = $incident->id;
-			break; // Yes, bad.
-		}
-	}
-	if ($cachet_incident_id === false) {
-		echo 'Can\'t find incident "' . $incident_prefix . ' ' . $service_name . '"' . "\n";
-		exit(1);
-	}
-
-	/* Update the incident */
-	$query = array(
-		'name' => $incident_prefix . ' ' . $service_name,
-		'message' => $service_output,
-		'status' => CACHET_STATUS_WATCHING,
-		'component_id' => $cachet_component_id,
-		'notify' => $cachet_notify_subscribers,
-		'component_status' => 3,
-	);
-	$result = cachet_query('incidents', 'POST', $query);
-	if ($result['code'] != 200) {
-		echo 'Can\'t update incident' . "\n";
-		exit(1);
-	}
-} elseif ($service_status == 'OK' && $service_status_type == 'HARD') { // Recovery completed
+} elseif ($service_status == 'OK') { // Recovery
 	echo 'OK HARD: updating incident or component' . "\n";
 	/* Get the incident ID */
 	$results = cachet_query('incidents');
