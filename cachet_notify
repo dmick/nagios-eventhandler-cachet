@@ -16,6 +16,7 @@ $cachet_component = $argv[1];
 $service_name = $argv[2];
 $service_status = $argv[3];
 $service_status_type = $argv[4];
+# this may include newlines
 $service_output = $argv[5];
 
 define('CACHET_STATUS_INVESTIGATING', 1);
@@ -101,9 +102,15 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 } elseif ($service_status != 'OK' && $service_status_type == 'HARD' && strpos($cachet_component, 'Load') === false) {
 /* If DOWN HARD and component doesn't contain 'Load' create an incident */
 	echo 'KO HARD: creating incident' . "\n";
+	markdown_message = strtr(
+		$service_output,
+		array(
+			'\n' => '<br>',
+		)
+	);
 	$query = array(
 		'name' => $incident_prefix . ' ' . $service_name,
-		'message' => $service_output,
+		'message' => $markdown_message,
 		'status' => CACHET_STATUS_INVESTIGATING,
 		'component_id' => $cachet_component_id,
 		'notify' => $cachet_notify_subscribers,
