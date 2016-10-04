@@ -1,13 +1,10 @@
 #!/usr/bin/php5
 <?php
 
-if ($argc != 6) {
-	echo 'Usage: ' . basename(__FILE__) . ' cachet_component service_name service_state service_state_type service_output' . "\n";
+if ($argc != 7) {
+	echo 'Usage: ' . basename(__FILE__) . ' cachet_component service_name service_state service_state_type service_output long_service_output' . "\n";
 	exit(1);
 }
-
-$cachet_url = 'http://example.com/api/v1/';
-$api_key = 'XXXXX';
 
 $incident_prefix = '[Nagios]';
 $cachet_notify_subscribers = true; // Enable subscribers notifcation for incidents creation and updates
@@ -17,6 +14,11 @@ $service_name = $argv[2];
 $service_status = $argv[3];
 $service_status_type = $argv[4];
 $service_output = $argv[5];
+$long_service_output = $argv[6];
+
+// Combine service_output and long_service_output for cachet 'message' parameter
+$combined_service_output = $service_output . "\n" . $long_service_output;
+$markdown_message = preg_replace("/\r\n|\r|\n/","  \n",$combined_service_output);
 
 define('CACHET_STATUS_INVESTIGATING', 1);
 define('CACHET_STATUS_IDENTIFIED', 2);
@@ -28,6 +30,7 @@ define('CACHET_COMPONENTSTATUS_INVESTIGATING', 2);
 define('CACHET_COMPONENTSTATUS_PARTIALOUTAGE', 3);
 define('CACHET_COMPONENTSTATUS_MAJOROUTAGE', 4);
 
+include('config.inc.php');
 function cachet_query($api_part, $action = 'GET', $data = null) {
 	global $api_key, $cachet_url;
 
@@ -79,6 +82,20 @@ if ($cachet_component_id === false) {
 }
 
 /*
+Translate Nagios status ($SERVICESTATE$) to Cachet Status
+- OK       = Operational    = CACHET_COMPONENTSTATUS_OK
+- WARNING  = Partial Outage = CACHET_COMPONENTSTATUS_PARTIALOUTAGE
+- CRITICAL = Major Outage   = CACHET_COMPONENTSTATUS_MAJOROUTAGE
+*/
+if ($service_status == 'OK') {
+	$component_status = CACHET_COMPONENTSTATUS_OK;
+} elseif ($service_status == 'WARNING') {
+	$component_status = CACHET_COMPONENTSTATUS_PARTIALOUTAGE;
+} elseif ($service_status == 'CRITICAL') {
+	$component_status = CACHET_COMPONENTSTATUS_MAJOROUTAGE;
+}
+
+/*
 Determine what to to:
  - if PROBLEM and SOFT then change component status to 2/INVESTIGATING (Performance Issues)
  - if PROBLEM and HARD then create incident
@@ -103,11 +120,11 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 	echo 'KO HARD: creating incident' . "\n";
 	$query = array(
 		'name' => $incident_prefix . ' ' . $service_name,
-		'message' => $service_output,
+		'message' => $markdown_message,
 		'status' => CACHET_STATUS_INVESTIGATING,
 		'component_id' => $cachet_component_id,
 		'notify' => $cachet_notify_subscribers,
-		'component_status' => 4,
+		'component_status' => $component_status,
 	);
 	$result = cachet_query('incidents', 'POST', $query);
 	if ($result['code'] != 200) {
@@ -160,11 +177,11 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 	/* Update the incident */
 	$query = array(
 		'name' => $incident_prefix . ' ' . $service_name,
-		'message' => $service_output,
+		'message' => $markdown_message,
 		'status' => CACHET_STATUS_FIXED,
 		'component_id' => $cachet_component_id,
 		'notify' => $cachet_notify_subscribers,
-                'component_status' => 1,
+                'component_status' => $component_status,
 	);
 	$result = cachet_query('incidents', 'POST', $query);
 	if ($result['code'] != 200) {

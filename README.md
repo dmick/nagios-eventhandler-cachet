@@ -9,8 +9,8 @@ A Nagios event handler to push Nagios notifications to Cachet API
 ## Installation
 
  - Get a Cachet API key: Create a new user in Cachet dashboard, login with this user, and get the API key in his profile.
- - Copy cachet_notify to /usr/share/nagios3/plugins/eventhandlers (depending on your configuration)
- - Change URL and API key in cachet_notification source code
+ - Clone this repo to /usr/share/nagios3/plugins/eventhandlers (depending on your configuration)
+ - Rename config.inc.php.example to config.inc.php and replace the Cachet credentials with your own
  - Try it: `./cachet_notify 'My Cachet component' 'My nagios service' CRITICAL HARD 'The service is Critical'`
 
 ## Configuration
@@ -19,7 +19,7 @@ A Nagios event handler to push Nagios notifications to Cachet API
 ```
   define command {
       command_name    cachet_notify
-      command_line    /usr/share/nagios3/plugins/eventhandlers/cachet_notify '$ARG1$' '$SERVICEDESC$ - $HOSTADDRESS$' '$SERVICESTATE$' '$SERVICESTATETYPE$' '$SERVICEOUTPUT$'
+      command_line    /usr/share/nagios3/plugins/eventhandlers/cachet_notify '$ARG1$' '$SERVICEDESC$ - $HOSTADDRESS$' '$SERVICESTATE$' '$SERVICESTATETYPE$' '$SERVICEOUTPUT$' '$LONGSERVICEOUTPUT$'
   }
 ```
  - Add an event handler on your services:
