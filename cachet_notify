@@ -6,9 +6,6 @@ if ($argc != 7) {
 	exit(1);
 }
 
-$cachet_url = 'http://example.com/api/v1/';
-$api_key = 'XXXXX';
-
 $incident_prefix = '[Nagios]';
 $cachet_notify_subscribers = true; // Enable subscribers notifcation for incidents creation and updates
 
@@ -33,6 +30,7 @@ define('CACHET_COMPONENTSTATUS_INVESTIGATING', 2);
 define('CACHET_COMPONENTSTATUS_PARTIALOUTAGE', 3);
 define('CACHET_COMPONENTSTATUS_MAJOROUTAGE', 4);
 
+include('config.inc.php');
 function cachet_query($api_part, $action = 'GET', $data = null) {
 	global $api_key, $cachet_url;
 
