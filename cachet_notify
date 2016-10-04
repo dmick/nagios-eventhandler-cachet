@@ -82,6 +82,20 @@ if ($cachet_component_id === false) {
 }
 
 /*
+Translate Nagios status ($SERVICESTATE$) to Cachet Status
+- OK       = Operational    = CACHET_COMPONENTSTATUS_OK
+- WARNING  = Partial Outage = CACHET_COMPONENTSTATUS_PARTIALOUTAGE
+- CRITICAL = Major Outage   = CACHET_COMPONENTSTATUS_MAJOROUTAGE
+*/
+if ($service_status == 'OK') {
+	$component_status = CACHET_COMPONENTSTATUS_OK;
+} elseif ($service_status == 'WARNING') {
+	$component_status = CACHET_COMPONENTSTATUS_PARTIALOUTAGE;
+} elseif ($service_status == 'CRITICAL') {
+	$component_status = CACHET_COMPONENTSTATUS_MAJOROUTAGE;
+}
+
+/*
 Determine what to to:
  - if PROBLEM and SOFT then change component status to 2/INVESTIGATING (Performance Issues)
  - if PROBLEM and HARD then create incident
@@ -110,7 +124,7 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 		'status' => CACHET_STATUS_INVESTIGATING,
 		'component_id' => $cachet_component_id,
 		'notify' => $cachet_notify_subscribers,
-		'component_status' => 4,
+		'component_status' => $component_status,
 	);
 	$result = cachet_query('incidents', 'POST', $query);
 	if ($result['code'] != 200) {
@@ -167,7 +181,7 @@ if ($service_status != 'OK' && $service_status_type == 'SOFT') { // Change compo
 		'status' => CACHET_STATUS_FIXED,
 		'component_id' => $cachet_component_id,
 		'notify' => $cachet_notify_subscribers,
-                'component_status' => 1,
+                'component_status' => $component_status,
 	);
 	$result = cachet_query('incidents', 'POST', $query);
 	if ($result['code'] != 200) {
